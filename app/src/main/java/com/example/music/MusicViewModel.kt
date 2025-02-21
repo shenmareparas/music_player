@@ -1,6 +1,7 @@
 package com.example.music
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,6 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
 
     init {
         fetchSongs()
-        // Collect playback state changes
         viewModelScope.launch {
             repository.isPlaying.collectLatest { isPlaying ->
                 _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
@@ -43,12 +43,10 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
     fun playSong(song: Song) {
         repository.playSong(song)
         _uiState.value = _uiState.value.copy(currentSong = song)
-        // No need to set isPlaying here; the listener handles it
     }
 
     fun togglePlayPause() {
         repository.togglePlayPause()
-        // No need to update isPlaying manually; the listener will trigger
     }
 
     fun playNextSong(allSongs: List<Song>) {
@@ -70,5 +68,15 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         repository.releasePlayer()
+    }
+}
+
+class MusicViewModelFactory(private val repository: MusicRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>, extras: androidx.lifecycle.viewmodel.CreationExtras): T {
+        if (modelClass.isAssignableFrom(MusicViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MusicViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
