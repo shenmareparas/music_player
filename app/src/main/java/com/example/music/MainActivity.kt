@@ -16,6 +16,10 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,32 +80,29 @@ fun MusicPlayerScreen(
                 val allSongs = uiState.songs
                 val topTracks = uiState.songs.filter { it.top_track }
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    item {
-                        Text(
-                            text = "For You",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    items(allSongs) { song ->
-                        SongItem(
-                            song = song,
-                            onClick = { viewModel.playSong(song) },
-                            isPlaying = uiState.currentSong == song && uiState.isPlaying
-                        )
-                    }
+                // Tab state
+                var selectedTabIndex by remember { mutableIntStateOf(0) }
+                val tabs = listOf("For You", "Top Tracks")
 
-                    item {
-                        Text(
-                            text = "Top Tracks",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                // TabRow
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = Color.Black,
+                    contentColor = Color.White
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            text = { Text(title) },
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index }
                         )
                     }
-                    items(topTracks) { song ->
+                }
+
+                // Content based on selected tab
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    val songsToShow = if (selectedTabIndex == 0) allSongs else topTracks
+                    items(songsToShow) { song ->
                         SongItem(
                             song = song,
                             onClick = { viewModel.playSong(song) },
@@ -110,6 +111,7 @@ fun MusicPlayerScreen(
                     }
                 }
 
+                // Now Playing view
                 uiState.currentSong?.let { song ->
                     NowPlayingView(
                         song = song,
