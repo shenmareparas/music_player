@@ -36,7 +36,7 @@ fun MusicPlayerScreen(
         modifier = Modifier.background(Color.Black)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp) // Replaced safeDrawingPadding with padding
+            modifier = Modifier.padding(16.dp)
         ) {
             when {
                 uiState.isLoading -> {
@@ -81,18 +81,24 @@ fun MusicPlayerScreen(
                         )
                     }
 
-                    // TabRow at the bottom
+                    // TabRow at the bottom with no indicator and highlighted text
                     TabRow(
                         selectedTabIndex = selectedTabIndex,
                         containerColor = Color.Black,
                         contentColor = Color.White,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp),
+                        indicator = { /* No indicator */ }
                     ) {
                         tabs.forEachIndexed { index, title ->
                             Tab(
-                                text = { Text(title) },
                                 selected = selectedTabIndex == index,
-                                onClick = { selectedTabIndex = index }
+                                onClick = { selectedTabIndex = index },
+                                text = {
+                                    Text(
+                                        text = title,
+                                        color = if (selectedTabIndex == index) Color.White else Color.Gray
+                                    )
+                                }
                             )
                         }
                     }
