@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 data class UiState(
@@ -20,6 +21,12 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
 
     init {
         fetchSongs()
+        // Collect playback state changes
+        viewModelScope.launch {
+            repository.isPlaying.collectLatest { isPlaying ->
+                _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
+            }
+        }
     }
 
     private fun fetchSongs() {
@@ -35,20 +42,29 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
 
     fun playSong(song: Song) {
         repository.playSong(song)
-        _uiState.value = _uiState.value.copy(
-            currentSong = song,
-            isPlaying = repository.isPlaying()
-        )
+        _uiState.value = _uiState.value.copy(currentSong = song)
+        // No need to set isPlaying here; the listener handles it
     }
 
     fun togglePlayPause() {
         repository.togglePlayPause()
-        _uiState.value = _uiState.value.copy(isPlaying = repository.isPlaying())
+        // No need to update isPlaying manually; the listener will trigger
     }
 
-    fun stopPlayback() {
-        repository.stopPlayback()
-        _uiState.value = _uiState.value.copy(isPlaying = false)
+    fun playNextSong(allSongs: List<Song>) {
+        val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
+        if (currentIndex >= 0 && currentIndex < allSongs.size - 1) {
+            val nextSong = allSongs[currentIndex + 1]
+            playSong(nextSong)
+        }
+    }
+
+    fun playPreviousSong(allSongs: List<Song>) {
+        val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
+        if (currentIndex > 0) {
+            val prevSong = allSongs[currentIndex - 1]
+            playSong(prevSong)
+        }
     }
 
     override fun onCleared() {

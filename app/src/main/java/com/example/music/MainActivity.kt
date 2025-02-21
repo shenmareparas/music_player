@@ -8,6 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -68,12 +73,10 @@ fun MusicPlayerScreen(
                 )
             }
             else -> {
-                // Split songs into two lists
                 val allSongs = uiState.songs
                 val topTracks = uiState.songs.filter { it.top_track }
 
                 LazyColumn(modifier = Modifier.weight(1f)) {
-                    // "For You" section
                     item {
                         Text(
                             text = "For You",
@@ -90,7 +93,6 @@ fun MusicPlayerScreen(
                         )
                     }
 
-                    // "Top Tracks" section
                     item {
                         Text(
                             text = "Top Tracks",
@@ -107,20 +109,17 @@ fun MusicPlayerScreen(
                         )
                     }
                 }
-            }
-        }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(onClick = { viewModel.togglePlayPause() }) {
-                Text(if (uiState.isPlaying) "Pause" else "Play")
-            }
-            Button(onClick = { viewModel.stopPlayback() }) {
-                Text("Stop")
+                uiState.currentSong?.let { song ->
+                    NowPlayingView(
+                        song = song,
+                        allSongs = uiState.songs,
+                        isPlaying = uiState.isPlaying,
+                        onPrevious = { viewModel.playPreviousSong(uiState.songs) },
+                        onTogglePlayPause = { viewModel.togglePlayPause() },
+                        onNext = { viewModel.playNextSong(uiState.songs) }
+                    )
+                }
             }
         }
     }
@@ -162,6 +161,86 @@ fun SongItem(song: Song, onClick: () -> Unit, isPlaying: Boolean) {
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun NowPlayingView(
+    song: Song,
+    allSongs: List<Song>,
+    isPlaying: Boolean,
+    onPrevious: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onNext: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = "https://cms.samespace.com/assets/${song.cover}",
+                contentDescription = "Album cover for ${song.name}",
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onPrevious,
+                    enabled = allSongs.indexOf(song) > 0
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = Color.White
+                    )
+                }
+                IconButton(onClick = onTogglePlayPause) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = Color.White
+                    )
+                }
+                IconButton(
+                    onClick = onNext,
+                    enabled = allSongs.indexOf(song) < allSongs.size - 1
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next",
+                        tint = Color.White
+                    )
+                }
             }
         }
     }
