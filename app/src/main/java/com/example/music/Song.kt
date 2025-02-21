@@ -5,7 +5,8 @@ data class Song(
     val name: String,
     val artist: String,
     val url: String,
-    val cover: String
+    val cover: String,
+    val top_track: Boolean // Added new field
 )
 
 data class SongResponse(

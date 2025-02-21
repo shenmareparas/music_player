@@ -2,18 +2,21 @@ package com.example.music
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class MusicViewModel(private val exoPlayer: ExoPlayer) : ViewModel() {
-    private val _songs = MutableStateFlow<List<Song>>(emptyList())
-    val songs: StateFlow<List<Song>> = _songs
+data class UiState(
+    val songs: List<Song> = emptyList(),
+    val isPlaying: Boolean = false,
+    val currentSong: Song? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
-    private val _isPlaying = MutableStateFlow(false)
-    val isPlaying: StateFlow<Boolean> = _isPlaying
+class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(UiState(isLoading = true))
+    val uiState: StateFlow<UiState> = _uiState
 
     init {
         fetchSongs()
@@ -21,40 +24,35 @@ class MusicViewModel(private val exoPlayer: ExoPlayer) : ViewModel() {
 
     private fun fetchSongs() {
         viewModelScope.launch {
-            try {
-                val response = Network.api.getSongs()
-                _songs.value = response.data
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            val songs = repository.fetchSongs()
+            _uiState.value = _uiState.value.copy(
+                songs = songs,
+                isLoading = false,
+                error = if (songs.isEmpty()) "Failed to load songs" else null
+            )
         }
     }
 
     fun playSong(song: Song) {
-        val mediaItem = MediaItem.fromUri(song.url)
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        exoPlayer.play()
-        _isPlaying.value = true
+        repository.playSong(song)
+        _uiState.value = _uiState.value.copy(
+            currentSong = song,
+            isPlaying = repository.isPlaying()
+        )
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-            _isPlaying.value = false
-        } else {
-            exoPlayer.play()
-            _isPlaying.value = true
-        }
+        repository.togglePlayPause()
+        _uiState.value = _uiState.value.copy(isPlaying = repository.isPlaying())
     }
 
     fun stopPlayback() {
-        exoPlayer.stop()
-        _isPlaying.value = false
+        repository.stopPlayback()
+        _uiState.value = _uiState.value.copy(isPlaying = false)
     }
 
     override fun onCleared() {
         super.onCleared()
-        exoPlayer.release()
+        repository.releasePlayer()
     }
 }

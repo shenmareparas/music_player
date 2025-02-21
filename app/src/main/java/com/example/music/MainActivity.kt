@@ -1,4 +1,4 @@
-package com.example.music // Adjust to your actual package name
+package com.example.music
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,25 +19,24 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
-import com.example.music.ui.theme.MusicTheme // Adjust to your package
+import com.example.music.ui.theme.MusicTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Make the status bar transparent and let content draw behind it
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val exoPlayer = ExoPlayer.Builder(this).build()
+        val repository = MusicRepository(Network.api, exoPlayer)
         setContent {
             MusicTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black // Black background
+                    color = Color.Black
                 ) {
-                    MusicPlayerScreen(exoPlayer)
+                    MusicPlayerScreen(repository)
                 }
             }
         }
@@ -45,28 +44,80 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MusicPlayerScreen(exoPlayer: ExoPlayer, viewModel: MusicViewModel = viewModel(factory = MusicViewModelFactory(exoPlayer))) {
-    val songs = viewModel.songs.collectAsState().value
-    val isPlaying = viewModel.isPlaying.collectAsState().value
+fun MusicPlayerScreen(
+    repository: MusicRepository,
+    viewModel: MusicViewModel = viewModel(factory = MusicViewModelFactory(repository))
+) {
+    val uiState = viewModel.uiState.collectAsState().value
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .safeDrawingPadding() // Add padding to respect system bars
+            .safeDrawingPadding()
     ) {
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(songs) { song ->
-                SongItem(song = song, onClick = { viewModel.playSong(song) })
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+            uiState.error != null -> {
+                Text(
+                    text = uiState.error,
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            else -> {
+                // Split songs into two lists
+                val allSongs = uiState.songs
+                val topTracks = uiState.songs.filter { it.top_track }
+
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    // "For You" section
+                    item {
+                        Text(
+                            text = "For You",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    items(allSongs) { song ->
+                        SongItem(
+                            song = song,
+                            onClick = { viewModel.playSong(song) },
+                            isPlaying = uiState.currentSong == song && uiState.isPlaying
+                        )
+                    }
+
+                    // "Top Tracks" section
+                    item {
+                        Text(
+                            text = "Top Tracks",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                        )
+                    }
+                    items(topTracks) { song ->
+                        SongItem(
+                            song = song,
+                            onClick = { viewModel.playSong(song) },
+                            isPlaying = uiState.currentSong == song && uiState.isPlaying
+                        )
+                    }
+                }
             }
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(onClick = { viewModel.togglePlayPause() }) {
-                Text(if (isPlaying) "Pause" else "Play")
+                Text(if (uiState.isPlaying) "Pause" else "Play")
             }
             Button(onClick = { viewModel.stopPlayback() }) {
                 Text("Stop")
@@ -76,13 +127,13 @@ fun MusicPlayerScreen(exoPlayer: ExoPlayer, viewModel: MusicViewModel = viewMode
 }
 
 @Composable
-fun SongItem(song: Song, onClick: () -> Unit) {
+fun SongItem(song: Song, onClick: () -> Unit, isPlaying: Boolean) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.Black) // Black card background
+        colors = CardDefaults.cardColors(containerColor = if (isPlaying) Color.DarkGray else Color.Black)
     ) {
         Row(
             modifier = Modifier
@@ -90,7 +141,6 @@ fun SongItem(song: Song, onClick: () -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Circular cover image
             AsyncImage(
                 model = "https://cms.samespace.com/assets/${song.cover}",
                 contentDescription = "Album cover for ${song.name}",
@@ -100,31 +150,28 @@ fun SongItem(song: Song, onClick: () -> Unit) {
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(12.dp))
-            // Song name and artist in a column with space between
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White // White for song name
+                    color = Color.White
                 )
-                Spacer(modifier = Modifier.height(4.dp)) // Space between song name and artist
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = song.artist,
-                    style = MaterialTheme.typography.bodySmall, // Smaller font
-                    color = Color.Gray // Grey for artist name
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
                 )
             }
         }
     }
 }
 
-class MusicViewModelFactory(private val exoPlayer: ExoPlayer) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+class MusicViewModelFactory(private val repository: MusicRepository) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>, extras: androidx.lifecycle.viewmodel.CreationExtras): T {
         if (modelClass.isAssignableFrom(MusicViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MusicViewModel(exoPlayer) as T
+            return MusicViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
