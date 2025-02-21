@@ -84,22 +84,7 @@ fun MusicPlayerScreen(
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
                 val tabs = listOf("For You", "Top Tracks")
 
-                // TabRow
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            text = { Text(title) },
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index }
-                        )
-                    }
-                }
-
-                // Content based on selected tab
+                // Song list
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     val songsToShow = if (selectedTabIndex == 0) allSongs else topTracks
                     items(songsToShow) { song ->
@@ -121,6 +106,22 @@ fun MusicPlayerScreen(
                         onTogglePlayPause = { viewModel.togglePlayPause() },
                         onNext = { viewModel.playNextSong(uiState.songs) }
                     )
+                }
+
+                // TabRow at the bottom
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = Color.Black,
+                    contentColor = Color.White,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            text = { Text(title) },
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index }
+                        )
+                    }
                 }
             }
         }
