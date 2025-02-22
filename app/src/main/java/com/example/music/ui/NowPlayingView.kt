@@ -40,14 +40,16 @@ fun NowPlayingView(
     onPrevious: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
-    onClick: () -> Unit // Added to open full-screen player
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp)
-            .clickable { onClick() }, // Make the entire mini player clickable
-        colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = Color(android.graphics.Color.parseColor(song.accent)) // Use accent color
+        )
     ) {
         Row(
             modifier = Modifier
