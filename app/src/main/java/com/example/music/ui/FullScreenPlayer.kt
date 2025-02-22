@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -37,11 +36,12 @@ import com.example.music.Song
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import java.util.Locale
 
 @Composable
 fun FullScreenPlayer(
     song: Song,
-    allSongs: List<Song>,
     isPlaying: Boolean,
     onPrevious: () -> Unit,
     onTogglePlayPause: () -> Unit,
@@ -68,7 +68,7 @@ fun FullScreenPlayer(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxSize() // Ensure Column fills the Box
+                .fillMaxSize()
                 .fillMaxWidth()
         ) {
             // Back button
@@ -78,7 +78,7 @@ fun FullScreenPlayer(
             ) {
                 IconButton(onClick = onDismiss) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.Filled.ArrowBackIosNew,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -87,7 +87,7 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Album art (square with slight corner smoothing)
+            // Album Cover
             AsyncImage(
                 model = "https://cms.samespace.com/assets/${song.cover}",
                 contentDescription = "Album cover for ${song.name}",
@@ -116,7 +116,7 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress bar with time labels
+            // Progress bar
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -155,10 +155,7 @@ fun FullScreenPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                IconButton(
-                    onClick = onPrevious,
-                    enabled = allSongs.indexOf(song) > 0
-                ) {
+                IconButton(onClick = onPrevious) {
                     Icon(
                         imageVector = Icons.Filled.SkipPrevious,
                         contentDescription = "Previous",
@@ -173,10 +170,7 @@ fun FullScreenPlayer(
                         modifier = Modifier.size(48.dp)
                     )
                 }
-                IconButton(
-                    onClick = onNext,
-                    enabled = allSongs.indexOf(song) < allSongs.size - 1
-                ) {
+                IconButton(onClick = onNext) {
                     Icon(
                         imageVector = Icons.Filled.SkipNext,
                         contentDescription = "Next",
@@ -188,10 +182,9 @@ fun FullScreenPlayer(
     }
 }
 
-// Helper function to format milliseconds to M:SS (single-digit minute)
 private fun formatTime(milliseconds: Long): String {
     val totalSeconds = milliseconds / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    return String.format("%d:%02d", minutes, seconds)
+    return String.format(Locale.US, "%d:%02d", minutes, seconds) // Explicitly use Locale.US
 }

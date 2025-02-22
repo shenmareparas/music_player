@@ -43,7 +43,6 @@ fun MusicPlayerScreen(
         if (showFullScreenPlayer && uiState.currentSong != null) {
             FullScreenPlayer(
                 song = uiState.currentSong,
-                allSongs = uiState.songs,
                 isPlaying = uiState.isPlaying,
                 onPrevious = { viewModel.playPreviousSong(uiState.songs) },
                 onTogglePlayPause = { viewModel.togglePlayPause() },

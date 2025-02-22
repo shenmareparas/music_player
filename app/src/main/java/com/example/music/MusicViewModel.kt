@@ -14,8 +14,8 @@ data class UiState(
     val currentSong: Song? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val songPosition: Long = 0L, // New: Current position in milliseconds
-    val songDuration: Long = 1L  // New: Total duration in milliseconds
+    val songPosition: Long = 0L,
+    val songDuration: Long = 1L
 )
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
@@ -29,7 +29,6 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
                 _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
             }
         }
-        // Collect song progress
         viewModelScope.launch {
             repository.songProgress.collectLatest { (position, duration) ->
                 _uiState.value = _uiState.value.copy(
@@ -62,18 +61,16 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
 
     fun playNextSong(allSongs: List<Song>) {
         val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
-        if (currentIndex >= 0 && currentIndex < allSongs.size - 1) {
-            val nextSong = allSongs[currentIndex + 1]
-            playSong(nextSong)
-        }
+        val nextIndex = if (currentIndex >= allSongs.size - 1) 0 else currentIndex + 1 // Cycle to first if at last
+        val nextSong = allSongs[nextIndex]
+        playSong(nextSong)
     }
 
     fun playPreviousSong(allSongs: List<Song>) {
         val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
-        if (currentIndex > 0) {
-            val prevSong = allSongs[currentIndex - 1]
-            playSong(prevSong)
-        }
+        val prevIndex = if (currentIndex <= 0) allSongs.size - 1 else currentIndex - 1 // Cycle to last if at first
+        val prevSong = allSongs[prevIndex]
+        playSong(prevSong)
     }
 
     override fun onCleared() {
