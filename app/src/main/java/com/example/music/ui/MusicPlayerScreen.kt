@@ -44,9 +44,9 @@ fun MusicPlayerScreen(
             FullScreenPlayer(
                 song = uiState.currentSong,
                 isPlaying = uiState.isPlaying,
-                onPrevious = { viewModel.playPreviousSong(uiState.songs) },
+                onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
                 onTogglePlayPause = { viewModel.togglePlayPause() },
-                onNext = { viewModel.playNextSong(uiState.songs) },
+                onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
                 onDismiss = { showFullScreenPlayer = false },
                 position = uiState.songPosition,
                 duration = uiState.songDuration
@@ -72,8 +72,8 @@ fun MusicPlayerScreen(
                         val allSongs = uiState.songs
                         val topTracks = uiState.songs.filter { it.top_track }
 
-                        // Tab state
-                        var selectedTabIndex by remember { mutableIntStateOf(0) }
+                        // Tab state synced with UiState
+                        var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
                         val tabs = listOf("For You", "Top Tracks")
 
                         // Song list
@@ -82,7 +82,13 @@ fun MusicPlayerScreen(
                             items(songsToShow) { song ->
                                 SongItem(
                                     song = song,
-                                    onClick = { viewModel.playSong(song) },
+                                    onClick = {
+                                        viewModel.playSong(
+                                            song,
+                                            if (selectedTabIndex == 0) "ForYou" else "TopTracks"
+                                        )
+                                        // Removed: showFullScreenPlayer = true
+                                    },
                                     isPlaying = uiState.currentSong == song && uiState.isPlaying
                                 )
                             }

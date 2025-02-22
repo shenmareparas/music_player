@@ -15,7 +15,9 @@ data class UiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val songPosition: Long = 0L,
-    val songDuration: Long = 1L
+    val songDuration: Long = 1L,
+    val sourceList: String? = null,
+    val selectedTabIndex: Int = 0 // New: Tracks the current tab
 )
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
@@ -50,27 +52,38 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
         }
     }
 
-    fun playSong(song: Song) {
+    fun playSong(song: Song, sourceList: String) {
         repository.playSong(song)
-        _uiState.value = _uiState.value.copy(currentSong = song)
+        val tabIndex = if (sourceList == "ForYou") 0 else 1 // Map sourceList to tab index
+        _uiState.value = _uiState.value.copy(
+            currentSong = song,
+            sourceList = sourceList,
+            selectedTabIndex = tabIndex
+        )
     }
 
     fun togglePlayPause() {
         repository.togglePlayPause()
     }
 
-    fun playNextSong(allSongs: List<Song>) {
-        val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
-        val nextIndex = if (currentIndex >= allSongs.size - 1) 0 else currentIndex + 1 // Cycle to first if at last
-        val nextSong = allSongs[nextIndex]
-        playSong(nextSong)
+    fun playNextSong(allSongs: List<Song>, topTracks: List<Song>) {
+        val currentSong = _uiState.value.currentSong ?: return
+        val sourceList = _uiState.value.sourceList ?: "ForYou"
+        val activeList = if (sourceList == "ForYou") allSongs else topTracks
+        val currentIndex = activeList.indexOf(currentSong)
+        val nextIndex = if (currentIndex >= activeList.size - 1) 0 else currentIndex + 1
+        val nextSong = activeList[nextIndex]
+        playSong(nextSong, sourceList)
     }
 
-    fun playPreviousSong(allSongs: List<Song>) {
-        val currentIndex = allSongs.indexOf(_uiState.value.currentSong)
-        val prevIndex = if (currentIndex <= 0) allSongs.size - 1 else currentIndex - 1 // Cycle to last if at first
-        val prevSong = allSongs[prevIndex]
-        playSong(prevSong)
+    fun playPreviousSong(allSongs: List<Song>, topTracks: List<Song>) {
+        val currentSong = _uiState.value.currentSong ?: return
+        val sourceList = _uiState.value.sourceList ?: "ForYou"
+        val activeList = if (sourceList == "ForYou") allSongs else topTracks
+        val currentIndex = activeList.indexOf(currentSong)
+        val prevIndex = if (currentIndex <= 0) activeList.size - 1 else currentIndex - 1
+        val prevSong = activeList[prevIndex]
+        playSong(prevSong, sourceList)
     }
 
     override fun onCleared() {
