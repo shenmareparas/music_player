@@ -81,24 +81,22 @@ fun MusicPlayerScreen(
                         )
                     }
 
-                    // TabRow at the bottom with no indicator and highlighted text
+                    // TabRow at the bottom with no indicator or divider
                     TabRow(
                         selectedTabIndex = selectedTabIndex,
                         containerColor = Color.Black,
-                        contentColor = Color.White,
+                        contentColor = Color.White, // Default color for selected tab
                         modifier = Modifier.padding(top = 8.dp),
-                        indicator = { /* No indicator */ }
+                        indicator = { }, // No underline
+                        divider = { }    // No divider
                     ) {
                         tabs.forEachIndexed { index, title ->
                             Tab(
+                                text = { Text(title) },
                                 selected = selectedTabIndex == index,
                                 onClick = { selectedTabIndex = index },
-                                text = {
-                                    Text(
-                                        text = title,
-                                        color = if (selectedTabIndex == index) Color.White else Color.Gray
-                                    )
-                                }
+                                selectedContentColor = Color.White,    // Highlight selected tab
+                                unselectedContentColor = Color.Gray    // Dim unselected tab
                             )
                         }
                     }
