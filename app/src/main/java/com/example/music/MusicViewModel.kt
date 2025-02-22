@@ -13,7 +13,9 @@ data class UiState(
     val isPlaying: Boolean = false,
     val currentSong: Song? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val songPosition: Long = 0L, // New: Current position in milliseconds
+    val songDuration: Long = 1L  // New: Total duration in milliseconds
 )
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
@@ -25,6 +27,15 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
         viewModelScope.launch {
             repository.isPlaying.collectLatest { isPlaying ->
                 _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
+            }
+        }
+        // Collect song progress
+        viewModelScope.launch {
+            repository.songProgress.collectLatest { (position, duration) ->
+                _uiState.value = _uiState.value.copy(
+                    songPosition = position,
+                    songDuration = duration
+                )
             }
         }
     }

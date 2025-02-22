@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +45,9 @@ fun FullScreenPlayer(
     onPrevious: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    position: Long, // New: Current position
+    duration: Long  // New: Total duration
 ) {
     Box(
         modifier = Modifier
@@ -72,7 +75,7 @@ fun FullScreenPlayer(
             ) {
                 IconButton(onClick = onDismiss) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack, // Reverted to standard Filled version
+                        imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -106,6 +109,18 @@ fun FullScreenPlayer(
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.LightGray,
                 textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress bar
+            LinearProgressIndicator(
+                progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp),
+                color = Color.White, // Progress color
+                trackColor = Color.Gray // Background track color
             )
 
             Spacer(modifier = Modifier.weight(1f))

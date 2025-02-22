@@ -6,6 +6,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class MusicRepository(private val apiService: ApiService, private val exoPlayer: ExoPlayer) {
@@ -47,4 +49,18 @@ class MusicRepository(private val apiService: ApiService, private val exoPlayer:
     fun releasePlayer() {
         exoPlayer.release()
     }
+
+    // New: Flow for song progress
+    val songProgress = flow {
+        while (true) {
+            if (exoPlayer.isPlaying || exoPlayer.playbackState == Player.STATE_READY) {
+                val position = exoPlayer.currentPosition.coerceAtLeast(0L)
+                val duration = exoPlayer.duration.coerceAtLeast(1L) // Avoid division by zero
+                emit(Pair(position, duration))
+            } else {
+                emit(Pair(0L, 1L)) // Reset when not playing
+            }
+            kotlinx.coroutines.delay(1000) // Update every second
+        }
+    }.flowOn(Dispatchers.Main)
 }

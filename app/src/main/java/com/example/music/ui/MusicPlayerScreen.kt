@@ -3,9 +3,9 @@ package com.example.music.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,13 +48,15 @@ fun MusicPlayerScreen(
                 onPrevious = { viewModel.playPreviousSong(uiState.songs) },
                 onTogglePlayPause = { viewModel.togglePlayPause() },
                 onNext = { viewModel.playNextSong(uiState.songs) },
-                onDismiss = { showFullScreenPlayer = false }
+                onDismiss = { showFullScreenPlayer = false },
+                position = uiState.songPosition,
+                duration = uiState.songDuration
             )
         } else {
             Column(
                 modifier = Modifier
                     .padding(16.dp)
-                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()) // Add status bar padding
+                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
             ) {
                 when {
                     uiState.isLoading -> {
@@ -91,11 +93,8 @@ fun MusicPlayerScreen(
                         uiState.currentSong?.let { song ->
                             NowPlayingView(
                                 song = song,
-                                allSongs = uiState.songs,
                                 isPlaying = uiState.isPlaying,
-                                onPrevious = { viewModel.playPreviousSong(uiState.songs) },
                                 onTogglePlayPause = { viewModel.togglePlayPause() },
-                                onNext = { viewModel.playNextSong(uiState.songs) },
                                 onClick = { showFullScreenPlayer = true }
                             )
                         }
