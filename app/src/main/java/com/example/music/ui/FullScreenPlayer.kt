@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,8 +47,8 @@ fun FullScreenPlayer(
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
     onDismiss: () -> Unit,
-    position: Long, // New: Current position
-    duration: Long  // New: Total duration
+    position: Long,
+    duration: Long
 ) {
     Box(
         modifier = Modifier
@@ -66,7 +67,9 @@ fun FullScreenPlayer(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize() // Ensure Column fills the Box
+                .fillMaxWidth()
         ) {
             // Back button
             Row(
@@ -113,17 +116,38 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress bar
-            LinearProgressIndicator(
-                progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp),
-                color = Color.White, // Progress color
-                trackColor = Color.Gray // Background track color
-            )
+            // Progress bar with time labels
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                LinearProgressIndicator(
+                    progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = Color.White,
+                    trackColor = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = formatTime(position),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                    Text(
+                        text = formatTime(duration),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Playback controls
             Row(
@@ -162,4 +186,12 @@ fun FullScreenPlayer(
             }
         }
     }
+}
+
+// Helper function to format milliseconds to M:SS (single-digit minute)
+private fun formatTime(milliseconds: Long): String {
+    val totalSeconds = milliseconds / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format("%d:%02d", minutes, seconds)
 }
