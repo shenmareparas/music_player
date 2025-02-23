@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -198,17 +199,26 @@ fun FullScreenPlayer(
                 IconButton(
                     onClick = {
                         onTogglePlayPause()
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) // Haptic feedback on Play/Pause
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
                     interactionSource = playPauseInteractionSource,
                     modifier = Modifier.scale(playPauseScale)
                 ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "Pause" else "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(56.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(168.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    ) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            tint = Color.Unspecified,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .align(Alignment.Center)
+                        )
+                    }
                 }
 
                 val nextInteractionSource = remember { MutableInteractionSource() }
