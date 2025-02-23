@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,7 +66,10 @@ fun MusicPlayerScreen(
             Column(
                 modifier = Modifier
                     .padding(vertical = 16.dp)
-                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+                    .padding(
+                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() // Add padding for navigation bar
+                    )
             ) {
                 when {
                     uiState.isLoading -> {
@@ -82,6 +86,7 @@ fun MusicPlayerScreen(
                         val allSongs = uiState.songs
                         val topTracks = uiState.songs.filter { it.top_track }
 
+                        // Tab state synced with UiState
                         var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
                         val tabs = listOf("For You", "Top Tracks")
 
@@ -102,7 +107,7 @@ fun MusicPlayerScreen(
                             }
                         }
 
-                        // Mini player (Now Playing view)
+                        // Mini player (Now Playing view) stretching edge-to-edge
                         uiState.currentSong?.let { song ->
                             Box(
                                 modifier = Modifier
@@ -117,12 +122,14 @@ fun MusicPlayerScreen(
                             }
                         }
 
-                        // TabRow at the bottom
+                        // TabRow at the bottom with navigation bar padding
                         TabRow(
                             selectedTabIndex = selectedTabIndex,
                             containerColor = Color.Black,
                             contentColor = Color.White,
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 0.dp), // Ensure no extra padding conflicts
                             indicator = { },
                             divider = { }
                         ) {
