@@ -1,5 +1,6 @@
 package com.example.music.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.music.MusicRepository
@@ -36,6 +39,12 @@ fun MusicPlayerScreen(
 ) {
     val uiState = viewModel.uiState.collectAsState().value
     var showFullScreenPlayer by remember { mutableStateOf(false) }
+    val hapticFeedback = LocalHapticFeedback.current
+
+    // Handle system back press to close full-screen player
+    BackHandler(enabled = showFullScreenPlayer) {
+        showFullScreenPlayer = false
+    }
 
     Box(
         modifier = Modifier.background(Color.Black)
@@ -87,7 +96,6 @@ fun MusicPlayerScreen(
                                             song,
                                             if (selectedTabIndex == 0) "ForYou" else "TopTracks"
                                         )
-                                        // Removed: showFullScreenPlayer = true
                                     },
                                     isPlaying = uiState.currentSong == song && uiState.isPlaying
                                 )
@@ -117,7 +125,10 @@ fun MusicPlayerScreen(
                                 Tab(
                                     text = { Text(title) },
                                     selected = selectedTabIndex == index,
-                                    onClick = { selectedTabIndex = index },
+                                    onClick = {
+                                        selectedTabIndex = index
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
                                     selectedContentColor = Color.White,
                                     unselectedContentColor = Color.Gray
                                 )

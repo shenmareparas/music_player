@@ -29,7 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.music.Song
@@ -41,6 +43,8 @@ fun NowPlayingView(
     onTogglePlayPause: () -> Unit,
     onClick: () -> Unit
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -68,7 +72,7 @@ fun NowPlayingView(
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = song.name,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 color = Color.White,
                 modifier = Modifier.weight(1f)
             )
@@ -79,7 +83,10 @@ fun NowPlayingView(
             val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, label = "PlayPauseScale")
 
             IconButton(
-                onClick = onTogglePlayPause,
+                onClick = {
+                    onTogglePlayPause()
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) // Haptic feedback on Play/Pause
+                },
                 interactionSource = interactionSource,
                 modifier = Modifier.scale(scale)
             ) {
