@@ -64,7 +64,7 @@ fun FullScreenPlayer(
     duration: Long
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var totalDragX by remember { mutableFloatStateOf(0f) } // Changed to mutableFloatStateOf
+    var totalDragX by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = Modifier
@@ -80,24 +80,6 @@ fun FullScreenPlayer(
             )
             .padding(16.dp)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onHorizontalDrag = { _, dragAmount ->
-                        totalDragX += dragAmount // Accumulate drag amount
-                    },
-                    onDragEnd = {
-                        val threshold = 100f // Minimum pixels to trigger a swipe
-                        if (totalDragX > threshold) {
-                            onPrevious() // Swipe right for Previous
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        } else if (totalDragX < -threshold) {
-                            onNext() // Swipe left for Next
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                        totalDragX = 0f // Reset drag distance after processing
-                    }
-                )
-            }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -130,13 +112,31 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Album Cover
+            // Album Cover with swipe gestures
             AsyncImage(
                 model = "https://cms.samespace.com/assets/${song.cover}",
                 contentDescription = "Album cover for ${song.name}",
                 modifier = Modifier
                     .size(350.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(RoundedCornerShape(4.dp))
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { _, dragAmount ->
+                                totalDragX += dragAmount // Accumulate drag amount
+                            },
+                            onDragEnd = {
+                                val threshold = 100f // Minimum pixels to trigger a swipe
+                                if (totalDragX > threshold) {
+                                    onPrevious() // Swipe right for Previous
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                } else if (totalDragX < -threshold) {
+                                    onNext() // Swipe left for Next
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                                totalDragX = 0f // Reset drag distance after processing
+                            }
+                        )
+                    },
                 contentScale = ContentScale.Crop
             )
 
