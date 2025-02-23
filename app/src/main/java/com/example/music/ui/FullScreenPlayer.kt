@@ -2,6 +2,7 @@ package com.example.music.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -19,9 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -29,7 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +47,9 @@ import com.example.music.Song
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import java.util.Locale
 
 @Composable
@@ -60,6 +64,7 @@ fun FullScreenPlayer(
     duration: Long
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    var totalDragX by remember { mutableFloatStateOf(0f) } // Changed to mutableFloatStateOf
 
     Box(
         modifier = Modifier
@@ -75,6 +80,24 @@ fun FullScreenPlayer(
             )
             .padding(16.dp)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { _, dragAmount ->
+                        totalDragX += dragAmount // Accumulate drag amount
+                    },
+                    onDragEnd = {
+                        val threshold = 100f // Minimum pixels to trigger a swipe
+                        if (totalDragX > threshold) {
+                            onPrevious() // Swipe right for Previous
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        } else if (totalDragX < -threshold) {
+                            onNext() // Swipe left for Next
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                        totalDragX = 0f // Reset drag distance after processing
+                    }
+                )
+            }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -141,7 +164,7 @@ fun FullScreenPlayer(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 LinearProgressIndicator(
-                    progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) }, // Updated to match Material3 signature
+                    progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
