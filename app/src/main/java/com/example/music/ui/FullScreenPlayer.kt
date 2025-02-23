@@ -1,6 +1,9 @@
 package com.example.music.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +18,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -37,6 +41,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import java.util.Locale
 
 @Composable
@@ -76,11 +82,20 @@ fun FullScreenPlayer(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Start
             ) {
-                IconButton(onClick = onDismiss) {
+                val interactionSource = remember { MutableInteractionSource() }
+                val isPressed by interactionSource.collectIsPressedAsState()
+                val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, label = "BackScale")
+
+                IconButton(
+                    onClick = onDismiss,
+                    interactionSource = interactionSource,
+                    modifier = Modifier.scale(scale)
+                ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBackIosNew,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -114,7 +129,7 @@ fun FullScreenPlayer(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Progress bar
             Column(
@@ -129,7 +144,7 @@ fun FullScreenPlayer(
                     color = Color.White,
                     trackColor = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -147,34 +162,62 @@ fun FullScreenPlayer(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             // Playback controls
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(36.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                IconButton(onClick = onPrevious) {
+                val prevInteractionSource = remember { MutableInteractionSource() }
+                val prevIsPressed by prevInteractionSource.collectIsPressedAsState()
+                val prevScale by animateFloatAsState(if (prevIsPressed) 0.9f else 1f, label = "PrevScale")
+
+                IconButton(
+                    onClick = onPrevious,
+                    interactionSource = prevInteractionSource,
+                    modifier = Modifier.scale(prevScale)
+                ) {
                     Icon(
-                        imageVector = Icons.Filled.SkipPrevious,
+                        imageVector = Icons.Filled.FastRewind,
                         contentDescription = "Previous",
-                        tint = Color.White
+                        tint = Color.Gray,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                IconButton(onClick = onTogglePlayPause) {
+
+                val playPauseInteractionSource = remember { MutableInteractionSource() }
+                val playPauseIsPressed by playPauseInteractionSource.collectIsPressedAsState()
+                val playPauseScale by animateFloatAsState(if (playPauseIsPressed) 0.9f else 1f, label = "PlayPauseScale")
+
+                IconButton(
+                    onClick = onTogglePlayPause,
+                    interactionSource = playPauseInteractionSource,
+                    modifier = Modifier.scale(playPauseScale)
+                ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = Color.White,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(56.dp)
                     )
                 }
-                IconButton(onClick = onNext) {
+
+                val nextInteractionSource = remember { MutableInteractionSource() }
+                val nextIsPressed by nextInteractionSource.collectIsPressedAsState()
+                val nextScale by animateFloatAsState(if (nextIsPressed) 0.9f else 1f, label = "NextScale")
+
+                IconButton(
+                    onClick = onNext,
+                    interactionSource = nextInteractionSource,
+                    modifier = Modifier.scale(nextScale)
+                ) {
                     Icon(
-                        imageVector = Icons.Filled.SkipNext,
+                        imageVector = Icons.Filled.FastForward,
                         contentDescription = "Next",
-                        tint = Color.White
+                        tint = Color.Gray,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
@@ -186,5 +229,5 @@ private fun formatTime(milliseconds: Long): String {
     val totalSeconds = milliseconds / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
-    return String.format(Locale.US, "%d:%02d", minutes, seconds) // Explicitly use Locale.US
+    return String.format(Locale.US, "%d:%02d", minutes, seconds)
 }
