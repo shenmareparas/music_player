@@ -64,7 +64,7 @@ fun MusicPlayerScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .padding(vertical = 16.dp) // Only vertical padding, no horizontal
+                    .padding(vertical = 16.dp)
                     .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
             ) {
                 when {
@@ -82,7 +82,6 @@ fun MusicPlayerScreen(
                         val allSongs = uiState.songs
                         val topTracks = uiState.songs.filter { it.top_track }
 
-                        // Tab state synced with UiState
                         var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
                         val tabs = listOf("For You", "Top Tracks")
 
@@ -103,7 +102,7 @@ fun MusicPlayerScreen(
                             }
                         }
 
-                        // Mini player (Now Playing view) stretching edge-to-edge
+                        // Mini player (Now Playing view)
                         uiState.currentSong?.let { song ->
                             Box(
                                 modifier = Modifier

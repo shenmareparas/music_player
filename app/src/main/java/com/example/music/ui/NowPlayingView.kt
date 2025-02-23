@@ -85,7 +85,7 @@ fun NowPlayingView(
             IconButton(
                 onClick = {
                     onTogglePlayPause()
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) // Haptic feedback on Play/Pause
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 },
                 interactionSource = interactionSource,
                 modifier = Modifier.scale(scale)

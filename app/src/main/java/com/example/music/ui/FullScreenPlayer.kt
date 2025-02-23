@@ -19,6 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,9 +46,6 @@ import com.example.music.Song
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
 import java.util.Locale
 
 @Composable
@@ -141,7 +141,7 @@ fun FullScreenPlayer(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 LinearProgressIndicator(
-                    progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
+                    progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) }, // Updated to match Material3 signature
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)

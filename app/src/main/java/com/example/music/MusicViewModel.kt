@@ -17,7 +17,7 @@ data class UiState(
     val songPosition: Long = 0L,
     val songDuration: Long = 1L,
     val sourceList: String? = null,
-    val selectedTabIndex: Int = 0 // New: Tracks the current tab
+    val selectedTabIndex: Int = 0
 )
 
 class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
@@ -54,7 +54,7 @@ class MusicViewModel(private val repository: MusicRepository) : ViewModel() {
 
     fun playSong(song: Song, sourceList: String) {
         repository.playSong(song)
-        val tabIndex = if (sourceList == "ForYou") 0 else 1 // Map sourceList to tab index
+        val tabIndex = if (sourceList == "ForYou") 0 else 1
         _uiState.value = _uiState.value.copy(
             currentSong = song,
             sourceList = sourceList,

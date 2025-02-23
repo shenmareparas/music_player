@@ -50,17 +50,16 @@ class MusicRepository(private val apiService: ApiService, private val exoPlayer:
         exoPlayer.release()
     }
 
-    // New: Flow for song progress
     val songProgress = flow {
         while (true) {
             if (exoPlayer.isPlaying || exoPlayer.playbackState == Player.STATE_READY) {
                 val position = exoPlayer.currentPosition.coerceAtLeast(0L)
-                val duration = exoPlayer.duration.coerceAtLeast(1L) // Avoid division by zero
+                val duration = exoPlayer.duration.coerceAtLeast(1L)
                 emit(Pair(position, duration))
             } else {
-                emit(Pair(0L, 1L)) // Reset when not playing
+                emit(Pair(0L, 1L))
             }
-            kotlinx.coroutines.delay(1000) // Update every second
+            kotlinx.coroutines.delay(1000)
         }
     }.flowOn(Dispatchers.Main)
 }
