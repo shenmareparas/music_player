@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -63,7 +64,7 @@ fun MusicPlayerScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(vertical = 16.dp) // Only vertical padding, no horizontal
                     .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
             ) {
                 when {
@@ -102,14 +103,19 @@ fun MusicPlayerScreen(
                             }
                         }
 
-                        // Mini player (Now Playing view)
+                        // Mini player (Now Playing view) stretching edge-to-edge
                         uiState.currentSong?.let { song ->
-                            NowPlayingView(
-                                song = song,
-                                isPlaying = uiState.isPlaying,
-                                onTogglePlayPause = { viewModel.togglePlayPause() },
-                                onClick = { showFullScreenPlayer = true }
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ) {
+                                NowPlayingView(
+                                    song = song,
+                                    isPlaying = uiState.isPlaying,
+                                    onTogglePlayPause = { viewModel.togglePlayPause() },
+                                    onClick = { showFullScreenPlayer = true }
+                                )
+                            }
                         }
 
                         // TabRow at the bottom
