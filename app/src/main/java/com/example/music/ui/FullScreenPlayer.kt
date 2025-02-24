@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import java.util.Locale
+import androidx.compose.foundation.clickable
 
 @Composable
 fun FullScreenPlayer(
@@ -61,8 +62,8 @@ fun FullScreenPlayer(
     duration: Long
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
-    var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
+    var totalDragX by remember { mutableFloatStateOf(0f) }
+    var totalDragY by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = Modifier
@@ -76,13 +77,12 @@ fun FullScreenPlayer(
                     end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
                 )
             )
-            .padding(16.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        totalDragX += dragAmount.x // Horizontal drag
-                        totalDragY += dragAmount.y // Vertical drag
+                        totalDragX += dragAmount.x
+                        totalDragY += dragAmount.y
                     },
                     onDragEnd = {
                         val horizontalThreshold = 100f
@@ -90,20 +90,19 @@ fun FullScreenPlayer(
 
                         when {
                             totalDragY > verticalThreshold -> {
-                                onDismiss() // Swipe down to minimize
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onDismiss()
                             }
+
                             totalDragX > horizontalThreshold -> {
-                                onPrevious() // Swipe right for Previous
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onPrevious()
                             }
+
                             totalDragX < -horizontalThreshold -> {
-                                onNext() // Swipe left for Next
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onNext()
                             }
                         }
-                        totalDragX = 0f // Reset horizontal drag
-                        totalDragY = 0f // Reset vertical drag
+                        totalDragX = 0f
+                        totalDragY = 0f
                     }
                 )
             }
@@ -116,8 +115,7 @@ fun FullScreenPlayer(
         ) {
             // Down arrow
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
                 val interactionSource = remember { MutableInteractionSource() }
@@ -153,7 +151,7 @@ fun FullScreenPlayer(
                 contentScale = ContentScale.Crop
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             // Song info
             Text(
@@ -162,7 +160,6 @@ fun FullScreenPlayer(
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodyLarge,
@@ -170,22 +167,22 @@ fun FullScreenPlayer(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(39.dp))
 
             // Progress bar
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(20.dp)
             ) {
                 LinearProgressIndicator(
                     progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
+                        .clip(RoundedCornerShape(24.dp)),
                     color = Color.White,
                     trackColor = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -197,17 +194,17 @@ fun FullScreenPlayer(
                     )
                     Text(
                         text = formatTime(duration),
-                        style = MaterialTheme.typography.bodySmall,
+                        style= MaterialTheme.typography.bodySmall,
                         color = Color.White
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(34.dp))
 
             // Playback controls
             Row(
-                horizontalArrangement = Arrangement.spacedBy(36.dp),
+                horizontalArrangement = Arrangement.spacedBy(48.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
@@ -224,7 +221,7 @@ fun FullScreenPlayer(
                         imageVector = Icons.Filled.FastRewind,
                         contentDescription = "Previous",
                         tint = Color.Gray,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(44.dp)
                     )
                 }
 
@@ -232,29 +229,27 @@ fun FullScreenPlayer(
                 val playPauseIsPressed by playPauseInteractionSource.collectIsPressedAsState()
                 val playPauseScale by animateFloatAsState(if (playPauseIsPressed) 0.9f else 1f, label = "PlayPauseScale")
 
-                IconButton(
-                    onClick = {
-                        onTogglePlayPause()
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    interactionSource = playPauseInteractionSource,
-                    modifier = Modifier.scale(playPauseScale)
+                Box(
+                    modifier = Modifier
+                        .scale(playPauseScale)
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable(
+                            interactionSource = playPauseInteractionSource,
+                            indication = null // Remove the default ripple effect
+                        ) {
+                            onTogglePlayPause()
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(168.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = Color.Unspecified,
-                            modifier = Modifier
-                                .size(96.dp)
-                                .align(Alignment.Center)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = Color.Black,
+                        modifier = Modifier.size(44.dp)
+                    )
                 }
 
                 val nextInteractionSource = remember { MutableInteractionSource() }
@@ -270,7 +265,7 @@ fun FullScreenPlayer(
                         imageVector = Icons.Filled.FastForward,
                         contentDescription = "Next",
                         tint = Color.Gray,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(44.dp)
                     )
                 }
             }

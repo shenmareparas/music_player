@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,13 +24,13 @@ import coil.compose.AsyncImage
 import com.example.music.Song
 
 @Composable
-fun SongItem(song: Song, onClick: () -> Unit, isPlaying: Boolean) {
+fun SongItem(song: Song, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(horizontal = 12.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = if (isPlaying) Color.DarkGray else Color.Black)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Row(
             modifier = Modifier
@@ -47,14 +46,13 @@ fun SongItem(song: Song, onClick: () -> Unit, isPlaying: Boolean) {
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.name,
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = song.artist,
                     style = MaterialTheme.typography.bodySmall,

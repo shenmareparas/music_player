@@ -81,11 +81,9 @@ fun MusicPlayerScreen(
                     top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
                     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 )
-                .padding(vertical = 16.dp)
         ) {
             when {
                 uiState.isLoading -> {
-                    // Show shimmer loading when data is loading
                     ShimmerLoadingList()
                 }
                 uiState.error != null -> {
@@ -113,8 +111,7 @@ fun MusicPlayerScreen(
                                         song,
                                         if (selectedTabIndex == 0) "ForYou" else "TopTracks"
                                     )
-                                },
-                                isPlaying = uiState.currentSong == song && uiState.isPlaying
+                                }
                             )
                         }
                     }
@@ -166,8 +163,7 @@ fun MusicPlayerScreen(
                         containerColor = Color.Black,
                         contentColor = Color.White,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 0.dp),
+                            .fillMaxWidth(),
                         indicator = { },
                         divider = { }
                     ) {
