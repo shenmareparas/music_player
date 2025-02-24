@@ -44,12 +44,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.music.Song
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import java.util.Locale
 
 @Composable
@@ -80,17 +77,16 @@ fun FullScreenPlayer(
                 )
             )
             .padding(16.dp)
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
-                        change.consume() // Consume the drag event to prevent interference
-                        totalDragX += dragAmount.x // Accumulate horizontal drag
-                        totalDragY += dragAmount.y // Accumulate vertical drag
+                        change.consume()
+                        totalDragX += dragAmount.x // Horizontal drag
+                        totalDragY += dragAmount.y // Vertical drag
                     },
                     onDragEnd = {
-                        val horizontalThreshold = 100f // Minimum pixels for horizontal swipe (song change)
-                        val verticalThreshold = 100f // Minimum pixels for vertical swipe (minimization)
+                        val horizontalThreshold = 100f
+                        val verticalThreshold = 100f
 
                         when {
                             totalDragY > verticalThreshold -> {
@@ -118,24 +114,28 @@ fun FullScreenPlayer(
                 .fillMaxSize()
                 .fillMaxWidth()
         ) {
-            // Back button
+            // Down arrow
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
             ) {
                 val interactionSource = remember { MutableInteractionSource() }
                 val isPressed by interactionSource.collectIsPressedAsState()
-                val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, label = "BackScale")
+                val scale by animateFloatAsState(if (isPressed) 0.9f else 1f, label = "DownScale")
 
                 IconButton(
-                    onClick = onDismiss,
+                    onClick = {
+                        onDismiss()
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    },
                     interactionSource = interactionSource,
                     modifier = Modifier.scale(scale)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        tint = Color.White,
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Minimize",
+                        tint = Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -148,7 +148,7 @@ fun FullScreenPlayer(
                 model = "https://cms.samespace.com/assets/${song.cover}",
                 contentDescription = "Album cover for ${song.name}",
                 modifier = Modifier
-                    .size(350.dp)
+                    .size(320.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 contentScale = ContentScale.Crop
             )

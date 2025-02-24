@@ -2,8 +2,6 @@ package com.example.music.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,7 +56,6 @@ fun MusicPlayerScreen(
             .background(Color.Black)
             .fillMaxSize()
     ) {
-        // Main content (song list, player, tabs)
         Column(
             modifier = Modifier
                 .padding(
@@ -83,7 +79,6 @@ fun MusicPlayerScreen(
                     val allSongs = uiState.songs
                     val topTracks = uiState.songs.filter { it.top_track }
 
-                    // Tab state synced with UiState
                     var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
                     val tabs = listOf("For You", "Top Tracks")
 
@@ -104,7 +99,6 @@ fun MusicPlayerScreen(
                         }
                     }
 
-                    // Morphing player animation in its original position
                     val transition = updateTransition(targetState = playerState, label = "PlayerTransition")
                     transition.AnimatedContent { state ->
                         when (state) {
@@ -127,7 +121,7 @@ fun MusicPlayerScreen(
                                 uiState.currentSong?.let { song ->
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxSize() // Ensure full-screen coverage
+                                            .fillMaxSize()
                                     ) {
                                         FullScreenPlayer(
                                             song = song,
@@ -145,7 +139,7 @@ fun MusicPlayerScreen(
                         }
                     }
 
-                    // TabRow at the bottom with navigation bar padding
+                    // Bottom Navigation Bar
                     TabRow(
                         selectedTabIndex = selectedTabIndex,
                         containerColor = Color.Black,
@@ -175,7 +169,6 @@ fun MusicPlayerScreen(
     }
 }
 
-// Enum to track player state
 enum class PlayerState {
     Mini,
     FullScreen
