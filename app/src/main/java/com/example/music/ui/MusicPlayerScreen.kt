@@ -1,9 +1,14 @@
 package com.example.music.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,105 +54,122 @@ fun MusicPlayerScreen(
     }
 
     Box(
-        modifier = Modifier.background(Color.Black)
+        modifier = Modifier
+            .background(Color.Black)
+            .fillMaxSize() // Ensure the Box fills the entire screen
     ) {
-        if (showFullScreenPlayer && uiState.currentSong != null) {
-            FullScreenPlayer(
-                song = uiState.currentSong,
-                isPlaying = uiState.isPlaying,
-                onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                onTogglePlayPause = { viewModel.togglePlayPause() },
-                onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                onDismiss = { showFullScreenPlayer = false },
-                position = uiState.songPosition,
-                duration = uiState.songDuration
-            )
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(vertical = 16.dp)
-                    .padding(
-                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() // Add padding for navigation bar
+        // Main content (song list, mini player, tabs)
+        Column(
+            modifier = Modifier
+                .padding(
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
+                .padding(vertical = 16.dp)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
+                uiState.error != null -> {
+                    Text(
+                        text = uiState.error,
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
-            ) {
-                when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                    }
-                    uiState.error != null -> {
-                        Text(
-                            text = uiState.error,
-                            color = Color.Red,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
-                    }
-                    else -> {
-                        val allSongs = uiState.songs
-                        val topTracks = uiState.songs.filter { it.top_track }
+                }
+                else -> {
+                    val allSongs = uiState.songs
+                    val topTracks = uiState.songs.filter { it.top_track }
 
-                        // Tab state synced with UiState
-                        var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
-                        val tabs = listOf("For You", "Top Tracks")
+                    // Tab state synced with UiState
+                    var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
+                    val tabs = listOf("For You", "Top Tracks")
 
-                        // Song list
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            val songsToShow = if (selectedTabIndex == 0) allSongs else topTracks
-                            items(songsToShow) { song ->
-                                SongItem(
-                                    song = song,
-                                    onClick = {
-                                        viewModel.playSong(
-                                            song,
-                                            if (selectedTabIndex == 0) "ForYou" else "TopTracks"
-                                        )
-                                    },
-                                    isPlaying = uiState.currentSong == song && uiState.isPlaying
-                                )
-                            }
+                    // Song list
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        val songsToShow = if (selectedTabIndex == 0) allSongs else topTracks
+                        items(songsToShow) { song ->
+                            SongItem(
+                                song = song,
+                                onClick = {
+                                    viewModel.playSong(
+                                        song,
+                                        if (selectedTabIndex == 0) "ForYou" else "TopTracks"
+                                    )
+                                },
+                                isPlaying = uiState.currentSong == song && uiState.isPlaying
+                            )
                         }
+                    }
 
-                        // Mini player (Now Playing view) stretching edge-to-edge
-                        uiState.currentSong?.let { song ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            ) {
-                                NowPlayingView(
-                                    song = song,
-                                    isPlaying = uiState.isPlaying,
-                                    onTogglePlayPause = { viewModel.togglePlayPause() },
-                                    onClick = { showFullScreenPlayer = true }
-                                )
-                            }
-                        }
-
-                        // TabRow at the bottom with navigation bar padding
-                        TabRow(
-                            selectedTabIndex = selectedTabIndex,
-                            containerColor = Color.Black,
-                            contentColor = Color.White,
+                    // Mini player (Now Playing view) stretching edge-to-edge
+                    uiState.currentSong?.let { song ->
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 0.dp), // Ensure no extra padding conflicts
-                            indicator = { },
-                            divider = { }
                         ) {
-                            tabs.forEachIndexed { index, title ->
-                                Tab(
-                                    text = { Text(title) },
-                                    selected = selectedTabIndex == index,
-                                    onClick = {
-                                        selectedTabIndex = index
-                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    },
-                                    selectedContentColor = Color.White,
-                                    unselectedContentColor = Color.Gray
-                                )
-                            }
+                            NowPlayingView(
+                                song = song,
+                                isPlaying = uiState.isPlaying,
+                                onTogglePlayPause = { viewModel.togglePlayPause() },
+                                onClick = { showFullScreenPlayer = true }
+                            )
+                        }
+                    }
+
+                    // TabRow at the bottom with navigation bar padding
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = Color.Black,
+                        contentColor = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 0.dp),
+                        indicator = { },
+                        divider = { }
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                text = { Text(title) },
+                                selected = selectedTabIndex == index,
+                                onClick = {
+                                    selectedTabIndex = index
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                selectedContentColor = Color.White,
+                                unselectedContentColor = Color.Gray
+                            )
                         }
                     }
                 }
+            }
+        }
+
+        // Animated full-screen player sliding up/down to fill the entire screen
+        AnimatedVisibility(
+            visible = showFullScreenPlayer && uiState.currentSong != null,
+            enter = slideInVertically(
+                initialOffsetY = { fullHeight -> fullHeight }, // Slide up from bottom
+                animationSpec = tween(durationMillis = 300) // Duration in milliseconds
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { fullHeight -> fullHeight }, // Slide down to bottom
+                animationSpec = tween(durationMillis = 300) // Duration in milliseconds
+            ),
+            modifier = Modifier.fillMaxSize() // Ensure full-screen coverage during animation
+        ) {
+            if (uiState.currentSong != null) {
+                FullScreenPlayer(
+                    song = uiState.currentSong,
+                    isPlaying = uiState.isPlaying,
+                    onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                    onTogglePlayPause = { viewModel.togglePlayPause() },
+                    onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                    onDismiss = { showFullScreenPlayer = false },
+                    position = uiState.songPosition,
+                    duration = uiState.songDuration
+                )
             }
         }
     }
