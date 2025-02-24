@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -31,9 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +58,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.ui.draw.drawBehind
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MusicPlayerScreen(
     repository: MusicRepository,
@@ -86,6 +92,7 @@ fun MusicPlayerScreen(
                 uiState.isLoading -> {
                     ShimmerLoadingList()
                 }
+
                 uiState.error != null -> {
                     Text(
                         text = uiState.error,
@@ -93,30 +100,43 @@ fun MusicPlayerScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
+
                 else -> {
                     val allSongs = uiState.songs
                     val topTracks = uiState.songs.filter { it.top_track }
 
-                    var selectedTabIndex by remember { mutableIntStateOf(uiState.selectedTabIndex) }
                     val tabs = listOf("For You", "Top Tracks")
+                    val pagerState = rememberPagerState(
+                        initialPage = uiState.selectedTabIndex,
+                        initialPageOffsetFraction = 0f
+                    ) {
+                        tabs.size
+                    }
+                    val coroutineScope = rememberCoroutineScope()
 
-                    // Song list
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        val songsToShow = if (selectedTabIndex == 0) allSongs else topTracks
-                        items(songsToShow) { song ->
-                            SongItem(
-                                song = song,
-                                onClick = {
-                                    viewModel.playSong(
-                                        song,
-                                        if (selectedTabIndex == 0) "ForYou" else "TopTracks"
-                                    )
-                                }
-                            )
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f)
+                    ) { page ->
+                        // Song list
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            val songsToShow = if (page == 0) allSongs else topTracks
+                            items(songsToShow) { song ->
+                                SongItem(
+                                    song = song,
+                                    onClick = {
+                                        viewModel.playSong(
+                                            song,
+                                            if (page == 0) "ForYou" else "TopTracks"
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
 
-                    val transition = updateTransition(targetState = playerState, label = "PlayerTransition")
+                    val transition =
+                        updateTransition(targetState = playerState, label = "PlayerTransition")
                     transition.AnimatedContent { state ->
                         when (state) {
                             PlayerState.Mini -> {
@@ -130,12 +150,23 @@ fun MusicPlayerScreen(
                                             isPlaying = uiState.isPlaying,
                                             onTogglePlayPause = { viewModel.togglePlayPause() },
                                             onClick = { playerState = PlayerState.FullScreen },
-                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) }
+                                            onPrevious = {
+                                                viewModel.playPreviousSong(
+                                                    uiState.songs,
+                                                    uiState.songs.filter { it.top_track }
+                                                )
+                                            },
+                                            onNext = {
+                                                viewModel.playNextSong(
+                                                    uiState.songs,
+                                                    uiState.songs.filter { it.top_track }
+                                                )
+                                            }
                                         )
                                     }
                                 }
                             }
+
                             PlayerState.FullScreen -> {
                                 uiState.currentSong?.let { song ->
                                     Box(
@@ -145,11 +176,20 @@ fun MusicPlayerScreen(
                                         FullScreenPlayer(
                                             song = song,
                                             isPlaying = uiState.isPlaying,
-                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                                            onPrevious = {
+                                                viewModel.playPreviousSong(
+                                                    uiState.songs,
+                                                    uiState.songs.filter { it.top_track }
+                                                )
+                                            },
                                             onTogglePlayPause = { viewModel.togglePlayPause() },
-                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                                            onDismiss = { playerState =
-                                                PlayerState.Mini },
+                                            onNext = {
+                                                viewModel.playNextSong(
+                                                    uiState.songs,
+                                                    uiState.songs.filter { it.top_track }
+                                                )
+                                            },
+                                            onDismiss = { playerState = PlayerState.Mini },
                                             position = uiState.songPosition,
                                             duration = uiState.songDuration
                                         )
@@ -158,10 +198,9 @@ fun MusicPlayerScreen(
                             }
                         }
                     }
-
                     // Bottom Navigation Bar
                     TabRow(
-                        selectedTabIndex = selectedTabIndex,
+                        selectedTabIndex = pagerState.currentPage,
                         containerColor = Color.Black,
                         contentColor = Color.White,
                         modifier = Modifier
@@ -172,19 +211,32 @@ fun MusicPlayerScreen(
                         tabs.forEachIndexed { index, title ->
                             Tab(
                                 text = { Text(title) },
-                                selected = selectedTabIndex == index,
+                                selected = pagerState.currentPage == index,
                                 onClick = {
-                                    selectedTabIndex = index
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 },
                                 selectedContentColor = Color.White,
-                                unselectedContentColor = Color.Gray
+                                unselectedContentColor = Color.Gray,
+                                modifier = Modifier.drawBehind {
+                                    if (pagerState.currentPage == index) {
+                                        drawCircle(
+                                            color = Color.White,
+                                            radius = 4.dp.toPx(),
+                                            center = Offset(
+                                                x = size.width / 2f,
+                                                y = size.height - 4.dp.toPx()
+                                            )
+                                        )
+                                    }
+                                }
                             )
                         }
                     }
                 }
-            }
-        }
+            }}
     }
 }
 
