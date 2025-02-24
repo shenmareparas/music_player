@@ -25,6 +25,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ripple.LocalRippleTheme
+import androidx.compose.material.ripple.RippleAlpha
+import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +35,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -70,6 +75,7 @@ fun MusicPlayerScreen(
     val uiState = viewModel.uiState.collectAsState().value
     var playerState by remember { mutableStateOf(PlayerState.Mini) } // Track player state
     val hapticFeedback = LocalHapticFeedback.current
+    val density = LocalDensity.current
 
     // Handle system back press to minimize full-screen player
     BackHandler(enabled = playerState == PlayerState.FullScreen) {
@@ -199,44 +205,50 @@ fun MusicPlayerScreen(
                         }
                     }
                     // Bottom Navigation Bar
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        containerColor = Color.Black,
-                        contentColor = Color.White,
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        indicator = { },
-                        divider = { }
-                    ) {
-                        tabs.forEachIndexed { index, title ->
-                            Tab(
-                                text = { Text(title) },
-                                selected = pagerState.currentPage == index,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                selectedContentColor = Color.White,
-                                unselectedContentColor = Color.Gray,
-                                modifier = Modifier.drawBehind {
-                                    if (pagerState.currentPage == index) {
-                                        drawCircle(
-                                            color = Color.White,
-                                            radius = 4.dp.toPx(),
-                                            center = Offset(
-                                                x = size.width / 2f,
-                                                y = size.height - 4.dp.toPx()
+                    CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
+                        TabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            containerColor = Color.Black,
+                            contentColor = Color.White,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 80.dp),
+                            indicator = { },
+                            divider = { }
+                        ) {
+                            tabs.forEachIndexed { index, title ->
+                                Tab(
+                                    text = { Text(title) },
+                                    selected = pagerState.currentPage == index,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    selectedContentColor = Color.White,
+                                    unselectedContentColor = Color.Gray,
+                                    modifier = Modifier.drawBehind {
+                                        if (pagerState.currentPage == index) {
+                                            val radius = with(density) { 4.dp.toPx() }
+                                            val y = with(density) { size.height - 4.dp.toPx()}
+                                            drawCircle(
+                                                color = Color.White,
+                                                radius = radius,
+                                                center = Offset(
+                                                    x = size.width / 2f,
+                                                    y = y
+                                                )
                                             )
-                                        )
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
-            }}
+            }
+        }
     }
 }
 
@@ -324,4 +336,12 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 enum class PlayerState {
     Mini,
     FullScreen
+}
+
+private object NoRippleTheme : RippleTheme {
+    @Composable
+    override fun defaultColor() = Color.Unspecified
+
+    @Composable
+    override fun rippleAlpha(): RippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f)
 }
