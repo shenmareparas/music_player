@@ -129,7 +129,9 @@ fun MusicPlayerScreen(
                                             song = song,
                                             isPlaying = uiState.isPlaying,
                                             onTogglePlayPause = { viewModel.togglePlayPause() },
-                                            onClick = { playerState = PlayerState.FullScreen }
+                                            onClick = { playerState = PlayerState.FullScreen },
+                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) }
                                         )
                                     }
                                 }
