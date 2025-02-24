@@ -1,20 +1,17 @@
 package com.example.music.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +35,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.music.MusicRepository
 import com.example.music.MusicViewModel
 import com.example.music.MusicViewModelFactory
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
 
 @Composable
 fun MusicPlayerScreen(
@@ -45,20 +46,20 @@ fun MusicPlayerScreen(
     viewModel: MusicViewModel = viewModel(factory = MusicViewModelFactory(repository))
 ) {
     val uiState = viewModel.uiState.collectAsState().value
-    var showFullScreenPlayer by remember { mutableStateOf(false) }
+    var playerState by remember { mutableStateOf(PlayerState.Mini) } // Track player state
     val hapticFeedback = LocalHapticFeedback.current
 
-    // Handle system back press to close full-screen player
-    BackHandler(enabled = showFullScreenPlayer) {
-        showFullScreenPlayer = false
+    // Handle system back press to minimize full-screen player
+    BackHandler(enabled = playerState == PlayerState.FullScreen) {
+        playerState = PlayerState.Mini
     }
 
     Box(
         modifier = Modifier
             .background(Color.Black)
-            .fillMaxSize() // Ensure the Box fills the entire screen
+            .fillMaxSize()
     ) {
-        // Main content (song list, mini player, tabs)
+        // Main content (song list, player, tabs)
         Column(
             modifier = Modifier
                 .padding(
@@ -103,18 +104,44 @@ fun MusicPlayerScreen(
                         }
                     }
 
-                    // Mini player (Now Playing view) stretching edge-to-edge
-                    uiState.currentSong?.let { song ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            NowPlayingView(
-                                song = song,
-                                isPlaying = uiState.isPlaying,
-                                onTogglePlayPause = { viewModel.togglePlayPause() },
-                                onClick = { showFullScreenPlayer = true }
-                            )
+                    // Morphing player animation in its original position
+                    val transition = updateTransition(targetState = playerState, label = "PlayerTransition")
+                    transition.AnimatedContent { state ->
+                        when (state) {
+                            PlayerState.Mini -> {
+                                uiState.currentSong?.let { song ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                    ) {
+                                        NowPlayingView(
+                                            song = song,
+                                            isPlaying = uiState.isPlaying,
+                                            onTogglePlayPause = { viewModel.togglePlayPause() },
+                                            onClick = { playerState = PlayerState.FullScreen }
+                                        )
+                                    }
+                                }
+                            }
+                            PlayerState.FullScreen -> {
+                                uiState.currentSong?.let { song ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize() // Ensure full-screen coverage
+                                    ) {
+                                        FullScreenPlayer(
+                                            song = song,
+                                            isPlaying = uiState.isPlaying,
+                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                                            onTogglePlayPause = { viewModel.togglePlayPause() },
+                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                                            onDismiss = { playerState = PlayerState.Mini },
+                                            position = uiState.songPosition,
+                                            duration = uiState.songDuration
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -145,32 +172,11 @@ fun MusicPlayerScreen(
                 }
             }
         }
-
-        // Animated full-screen player sliding up/down to fill the entire screen
-        AnimatedVisibility(
-            visible = showFullScreenPlayer && uiState.currentSong != null,
-            enter = slideInVertically(
-                initialOffsetY = { fullHeight -> fullHeight }, // Slide up from bottom
-                animationSpec = tween(durationMillis = 300) // Duration in milliseconds
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { fullHeight -> fullHeight }, // Slide down to bottom
-                animationSpec = tween(durationMillis = 300) // Duration in milliseconds
-            ),
-            modifier = Modifier.fillMaxSize() // Ensure full-screen coverage during animation
-        ) {
-            if (uiState.currentSong != null) {
-                FullScreenPlayer(
-                    song = uiState.currentSong,
-                    isPlaying = uiState.isPlaying,
-                    onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                    onTogglePlayPause = { viewModel.togglePlayPause() },
-                    onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
-                    onDismiss = { showFullScreenPlayer = false },
-                    position = uiState.songPosition,
-                    duration = uiState.songDuration
-                )
-            }
-        }
     }
+}
+
+// Enum to track player state
+enum class PlayerState {
+    Mini,
+    FullScreen
 }
