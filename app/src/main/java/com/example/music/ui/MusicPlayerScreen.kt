@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.music.MusicRepository
 import com.example.music.MusicViewModel
-import com.example.music.MusicViewModelFactory
+import com.example.music.MusicViewModelFactory // Added import
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MusicPlayerScreen(
     repository: MusicRepository,
-    viewModel: MusicViewModel = viewModel(factory = MusicViewModelFactory(repository))
+    viewModel: MusicViewModel = viewModel(factory = MusicViewModelFactory(repository)) // Updated with factory
 ) {
     val uiState = viewModel.uiState.collectAsState().value
     var playerState by remember { mutableStateOf(PlayerState.Mini) } // Track player state
@@ -156,18 +156,8 @@ fun MusicPlayerScreen(
                                             isPlaying = uiState.isPlaying,
                                             onTogglePlayPause = { viewModel.togglePlayPause() },
                                             onClick = { playerState = PlayerState.FullScreen },
-                                            onPrevious = {
-                                                viewModel.playPreviousSong(
-                                                    uiState.songs,
-                                                    uiState.songs.filter { it.top_track }
-                                                )
-                                            },
-                                            onNext = {
-                                                viewModel.playNextSong(
-                                                    uiState.songs,
-                                                    uiState.songs.filter { it.top_track }
-                                                )
-                                            }
+                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
+                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) }
                                         )
                                     }
                                 }
@@ -182,19 +172,9 @@ fun MusicPlayerScreen(
                                         FullScreenPlayer(
                                             song = song,
                                             isPlaying = uiState.isPlaying,
-                                            onPrevious = {
-                                                viewModel.playPreviousSong(
-                                                    uiState.songs,
-                                                    uiState.songs.filter { it.top_track }
-                                                )
-                                            },
+                                            onPrevious = { viewModel.playPreviousSong(uiState.songs, uiState.songs.filter { it.top_track }) },
                                             onTogglePlayPause = { viewModel.togglePlayPause() },
-                                            onNext = {
-                                                viewModel.playNextSong(
-                                                    uiState.songs,
-                                                    uiState.songs.filter { it.top_track }
-                                                )
-                                            },
+                                            onNext = { viewModel.playNextSong(uiState.songs, uiState.songs.filter { it.top_track }) },
                                             onDismiss = { playerState = PlayerState.Mini },
                                             position = uiState.songPosition,
                                             duration = uiState.songDuration,
@@ -207,6 +187,7 @@ fun MusicPlayerScreen(
                             }
                         }
                     }
+
                     // Bottom Navigation Bar
                     CompositionLocalProvider(LocalRippleTheme provides NoRippleTheme) {
                         TabRow(
