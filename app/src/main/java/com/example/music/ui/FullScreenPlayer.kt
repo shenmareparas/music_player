@@ -24,8 +24,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -55,11 +53,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.music.Song
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.FastRewind
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
@@ -197,7 +197,7 @@ fun FullScreenPlayer(
                     modifier = Modifier.scale(scale)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        imageVector = Icons.Rounded.KeyboardArrowDown,
                         contentDescription = "Minimize",
                         tint = Color.Gray,
                         modifier = Modifier.size(24.dp)
@@ -338,7 +338,7 @@ fun FullScreenPlayer(
                     modifier = Modifier.scale(prevScale)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.FastRewind,
+                        imageVector = Icons.Rounded.FastRewind,
                         contentDescription = "Previous",
                         tint = Color.Gray,
                         modifier = Modifier.size(44.dp)
@@ -368,7 +368,7 @@ fun FullScreenPlayer(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = Color.Black,
                         modifier = Modifier.size(44.dp)
@@ -398,7 +398,7 @@ fun FullScreenPlayer(
                     modifier = Modifier.scale(nextScale)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.FastForward,
+                        imageVector = Icons.Rounded.FastForward,
                         contentDescription = "Next",
                         tint = Color.Gray,
                         modifier = Modifier.size(44.dp)
