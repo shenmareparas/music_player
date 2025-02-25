@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -80,16 +81,17 @@ fun FullScreenPlayer(
     sourceList: String
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var totalDragX by remember { mutableFloatStateOf(0f) }
-    var totalDragY by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
+    var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
     val activeList = if (sourceList == "ForYou") allSongs else topTracks
     val initialIndex = activeList.indexOf(song).coerceAtLeast(0)
     val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex)
     var currentSong by remember { mutableStateOf(song) }
     val coroutineScope = rememberCoroutineScope()
-    var isDragging by remember { mutableStateOf(false) }
+    var isDragging by remember { mutableStateOf(false) } // Track dragging state
     val offsetY by animateFloatAsState(
-        targetValue = if (isDragging) totalDragY else 0f,
+        targetValue = if (isDragging) totalDragY.coerceAtMost(density.run { 2000.dp.toPx() }) else 0f, // Cap the drag at a reasonable screen height
         animationSpec = tween(durationMillis = 200),
         label = "OffsetYAnimation"
     )
@@ -97,16 +99,16 @@ fun FullScreenPlayer(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .offset { IntOffset(0, offsetY.toInt()) }
+            .offset { IntOffset(0, offsetY.toInt()) } // Apply vertical offset to the entire content
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        if (dragAmount.y > 0) {
+                        if (dragAmount.y > 0) { // Only track downward drags for minimization
                             totalDragY += dragAmount.y
                             isDragging = true
                         }
-                        totalDragX += dragAmount.x
+                        totalDragX += dragAmount.x // Still track horizontal drags for song changes
                     },
                     onDragEnd = {
                         isDragging = false
