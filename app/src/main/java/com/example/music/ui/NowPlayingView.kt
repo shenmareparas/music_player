@@ -81,7 +81,7 @@ fun NowPlayingView(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .padding(horizontal = 20.dp, vertical = 8.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {

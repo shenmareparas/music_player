@@ -1,6 +1,7 @@
 package com.example.music.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -48,6 +50,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.music.Song
@@ -57,9 +60,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -84,9 +87,67 @@ fun FullScreenPlayer(
     val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex)
     var currentSong by remember { mutableStateOf(song) }
     val coroutineScope = rememberCoroutineScope()
+    var isDragging by remember { mutableStateOf(false) }
+    val offsetY by animateFloatAsState(
+        targetValue = if (isDragging) totalDragY else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "OffsetYAnimation"
+    )
 
     Box(
         modifier = Modifier
+            .fillMaxSize()
+            .offset { IntOffset(0, offsetY.toInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        if (dragAmount.y > 0) {
+                            totalDragY += dragAmount.y
+                            isDragging = true
+                        }
+                        totalDragX += dragAmount.x
+                    },
+                    onDragEnd = {
+                        isDragging = false
+                        val horizontalThreshold = 100f
+                        val verticalThreshold = 100f
+
+                        when {
+                            totalDragY > verticalThreshold -> {
+                                onDismiss()
+                            }
+                            totalDragX > horizontalThreshold -> {
+                                onPrevious()
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage - 1).let {
+                                            if (it < 0) activeList.size - 1 else it
+                                        }
+                                    )
+                                }
+                            }
+                            totalDragX < -horizontalThreshold -> {
+                                onNext()
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage + 1).let {
+                                            if (it >= activeList.size) 0 else it
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        totalDragX = 0f
+                        totalDragY = 0f
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        totalDragX = 0f
+                        totalDragY = 0f
+                    }
+                )
+            }
             .background(
                 Brush.linearGradient(
                     colors = listOf(
@@ -97,45 +158,6 @@ fun FullScreenPlayer(
                     end = Offset(0f, Float.POSITIVE_INFINITY)
                 )
             )
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        totalDragX += dragAmount.x
-                        totalDragY += dragAmount.y
-                    },
-                    onDragEnd = {
-                        val horizontalThreshold = 100f
-                        val verticalThreshold = 100f
-
-                        when {
-                            totalDragY > verticalThreshold -> {
-                                onDismiss()
-                            }
-
-                            totalDragX > horizontalThreshold -> {
-                                onPrevious()
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        (pagerState.currentPage - 1).coerceAtLeast(0)
-                                    )
-                                }
-                            }
-
-                            totalDragX < -horizontalThreshold -> {
-                                onNext()
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        (pagerState.currentPage + 1).coerceAtMost(activeList.size - 1)
-                                    )
-                                }
-                            }
-                        }
-                        totalDragX = 0f
-                        totalDragY = 0f
-                    }
-                )
-            }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
