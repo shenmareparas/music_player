@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,9 +78,9 @@ fun FullScreenPlayer(
     var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
     var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
     val activeList = if (sourceList == "ForYou") allSongs else topTracks
-    val initialIndex = activeList.indexOf(song).coerceAtLeast(0) // Ensure valid index
-    val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex) // Added pageCount
-    var currentSong by remember { mutableStateOf(song) } // Track the current song
+    val initialIndex = activeList.indexOf(song).coerceAtLeast(0)
+    val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex)
+    var currentSong by remember { mutableStateOf(song) }
     val coroutineScope = rememberCoroutineScope()
 
     Box(
@@ -89,14 +88,13 @@ fun FullScreenPlayer(
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        Color(android.graphics.Color.parseColor(currentSong.accent)), // Use current song's accent
+                        Color(android.graphics.Color.parseColor(currentSong.accent)),
                         Color.Black
                     ),
                     start = Offset(0f, 0f),
                     end = Offset(0f, Float.POSITIVE_INFINITY)
                 )
             )
-            .padding(16.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
@@ -113,13 +111,13 @@ fun FullScreenPlayer(
                                 onDismiss()
                             }
                             totalDragX > horizontalThreshold -> {
-                                onPrevious() // Swipe right for Previous
+                                onPrevious()
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage - 1)
                                 }
                             }
                             totalDragX < -horizontalThreshold -> {
-                                onNext() // Swipe left for Next
+                                onNext()
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                 }
@@ -165,19 +163,18 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Carousel-style album cover with HorizontalPager
+            // Carousel album cover
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.size(320.dp),
-//                contentPadding = PaddingValues(horizontal = 0.dp), // Partial visibility for adjacent covers
-                pageSpacing = 16.dp // Space between covers
+                contentPadding = PaddingValues(horizontal = 26.dp),
+                pageSpacing = 16.dp
             ) { page ->
                 val song = activeList[page]
                 Box(
                     modifier = Modifier
                         .size(320.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black) // Optional: background for partial visibility
                 ) {
                     AsyncImage(
                         model = "https://cms.samespace.com/assets/${song.cover}",
@@ -185,7 +182,7 @@ fun FullScreenPlayer(
                         modifier = Modifier
                             .size(320.dp)
                             .clip(RoundedCornerShape(4.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 }
             }
@@ -203,7 +200,7 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Song info (updated for current song)
+            // Song info
             Text(
                 text = currentSong.name,
                 style = MaterialTheme.typography.headlineMedium,
@@ -292,7 +289,7 @@ fun FullScreenPlayer(
                         .background(Color.White)
                         .clickable(
                             interactionSource = playPauseInteractionSource,
-                            indication = null // Remove the default ripple effect
+                            indication = null
                         ) {
                             onTogglePlayPause()
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
