@@ -56,6 +56,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -166,21 +168,33 @@ fun FullScreenPlayer(
             // Carousel album cover
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.size(320.dp),
-                contentPadding = PaddingValues(horizontal = 26.dp),
-                pageSpacing = 16.dp
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp),
+                contentPadding = PaddingValues(horizontal = 50.dp),
             ) { page ->
                 val song = activeList[page]
                 Box(
                     modifier = Modifier
-                        .size(320.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            val absOffset = pageOffset.absoluteValue
+
+                            // Scale down the image as it moves away from the center
+                            val scale = 0.8f + (1 - absOffset).coerceIn(0f, 0.2f)
+
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = scale
+                        }
+                        .clip(RoundedCornerShape(4.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
                         model = "https://cms.samespace.com/assets/${song.cover}",
                         contentDescription = "Album cover for ${song.name}",
-                        modifier = Modifier
-                            .size(320.dp)
+                        modifier = Modifier.size(320.dp)
                             .clip(RoundedCornerShape(4.dp)),
                         contentScale = ContentScale.Crop,
                     )
