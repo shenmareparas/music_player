@@ -197,7 +197,10 @@ fun MusicPlayerScreen(
                                             },
                                             onDismiss = { playerState = PlayerState.Mini },
                                             position = uiState.songPosition,
-                                            duration = uiState.songDuration
+                                            duration = uiState.songDuration,
+                                            allSongs = uiState.songs,
+                                            topTracks = uiState.songs.filter { it.top_track },
+                                            sourceList = uiState.sourceList ?: "ForYou"
                                         )
                                     }
                                 }
@@ -231,7 +234,7 @@ fun MusicPlayerScreen(
                                     modifier = Modifier.drawBehind {
                                         if (pagerState.currentPage == index) {
                                             val radius = with(density) { 4.dp.toPx() }
-                                            val y = with(density) { size.height - 4.dp.toPx()}
+                                            val y = with(density) { size.height - 4.dp.toPx() }
                                             drawCircle(
                                                 color = Color.White,
                                                 radius = radius,
@@ -343,5 +346,5 @@ private object NoRippleTheme : RippleTheme {
     override fun defaultColor() = Color.Unspecified
 
     @Composable
-    override fun rippleAlpha(): RippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f)
+    override fun rippleAlpha(): RippleAlpha = RippleAlpha(0.0f, 0.0f, 0.0f, 0.0f)
 }

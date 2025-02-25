@@ -1,7 +1,9 @@
 package com.example.music.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -15,6 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,7 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,9 +54,13 @@ import com.example.music.Song
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import java.util.Locale
-import androidx.compose.foundation.clickable
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FullScreenPlayer(
     song: Song,
@@ -59,24 +70,33 @@ fun FullScreenPlayer(
     onNext: () -> Unit,
     onDismiss: () -> Unit,
     position: Long,
-    duration: Long
+    duration: Long,
+    allSongs: List<Song>,
+    topTracks: List<Song>,
+    sourceList: String
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var totalDragX by remember { mutableFloatStateOf(0f) }
-    var totalDragY by remember { mutableFloatStateOf(0f) }
+    var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
+    var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
+    val activeList = if (sourceList == "ForYou") allSongs else topTracks
+    val initialIndex = activeList.indexOf(song).coerceAtLeast(0) // Ensure valid index
+    val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex) // Added pageCount
+    var currentSong by remember { mutableStateOf(song) } // Track the current song
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        Color(android.graphics.Color.parseColor(song.accent)),
+                        Color(android.graphics.Color.parseColor(currentSong.accent)), // Use current song's accent
                         Color.Black
                     ),
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+                    start = Offset(0f, 0f),
+                    end = Offset(0f, Float.POSITIVE_INFINITY)
                 )
             )
+            .padding(16.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
@@ -92,13 +112,17 @@ fun FullScreenPlayer(
                             totalDragY > verticalThreshold -> {
                                 onDismiss()
                             }
-
                             totalDragX > horizontalThreshold -> {
-                                onPrevious()
+                                onPrevious() // Swipe right for Previous
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
                             }
-
                             totalDragX < -horizontalThreshold -> {
-                                onNext()
+                                onNext() // Swipe left for Next
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
                             }
                         }
                         totalDragX = 0f
@@ -139,29 +163,55 @@ fun FullScreenPlayer(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Album Cover
-            AsyncImage(
-                model = "https://cms.samespace.com/assets/${song.cover}",
-                contentDescription = "Album cover for ${song.name}",
-                modifier = Modifier
-                    .size(320.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop
-            )
+            // Carousel-style album cover with HorizontalPager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.size(320.dp),
+//                contentPadding = PaddingValues(horizontal = 0.dp), // Partial visibility for adjacent covers
+                pageSpacing = 16.dp // Space between covers
+            ) { page ->
+                val song = activeList[page]
+                Box(
+                    modifier = Modifier
+                        .size(320.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black) // Optional: background for partial visibility
+                ) {
+                    AsyncImage(
+                        model = "https://cms.samespace.com/assets/${song.cover}",
+                        contentDescription = "Album cover for ${song.name}",
+                        modifier = Modifier
+                            .size(320.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            // Update currentSong and trigger playback when pager settles
+            LaunchedEffect(pagerState.currentPage) {
+                currentSong = activeList[pagerState.currentPage]
+                val newIndex = pagerState.currentPage
+                if (newIndex > initialIndex) {
+                    onNext()
+                } else if (newIndex < initialIndex) {
+                    onPrevious()
+                }
+            }
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Song info
+            // Song info (updated for current song)
             Text(
-                text = song.name,
+                text = currentSong.name,
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = song.artist,
+                text = currentSong.artist,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.LightGray,
                 textAlign = TextAlign.Center
@@ -194,7 +244,7 @@ fun FullScreenPlayer(
                     )
                     Text(
                         text = formatTime(duration),
-                        style= MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = Color.White
                     )
                 }
@@ -213,7 +263,12 @@ fun FullScreenPlayer(
                 val prevScale by animateFloatAsState(if (prevIsPressed) 0.9f else 1f, label = "PrevScale")
 
                 IconButton(
-                    onClick = onPrevious,
+                    onClick = {
+                        onPrevious()
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    },
                     interactionSource = prevInteractionSource,
                     modifier = Modifier.scale(prevScale)
                 ) {
@@ -257,7 +312,12 @@ fun FullScreenPlayer(
                 val nextScale by animateFloatAsState(if (nextIsPressed) 0.9f else 1f, label = "NextScale")
 
                 IconButton(
-                    onClick = onNext,
+                    onClick = {
+                        onNext()
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    },
                     interactionSource = nextInteractionSource,
                     modifier = Modifier.scale(nextScale)
                 ) {
@@ -271,6 +331,18 @@ fun FullScreenPlayer(
             }
         }
     }
+}
+
+// Helper function to update the current song based on direction (non-Composable)
+fun updateCurrentSong(currentSong: Song, direction: Int, allSongs: List<Song>, topTracks: List<Song>, sourceList: String): Song {
+    val activeList = if (sourceList == "ForYou") allSongs else topTracks
+    val currentIndex = activeList.indexOf(currentSong)
+    val newIndex = if (direction > 0) {
+        if (currentIndex >= activeList.size - 1) 0 else currentIndex + 1
+    } else {
+        if (currentIndex <= 0) activeList.size - 1 else currentIndex - 1
+    }
+    return activeList[newIndex]
 }
 
 private fun formatTime(milliseconds: Long): String {
