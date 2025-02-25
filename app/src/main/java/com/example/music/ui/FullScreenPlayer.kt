@@ -30,6 +30,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,11 +56,10 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.graphicsLayer
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -77,8 +77,8 @@ fun FullScreenPlayer(
     sourceList: String
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
-    var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
+    var totalDragX by remember { mutableFloatStateOf(0f) }
+    var totalDragY by remember { mutableFloatStateOf(0f) }
     val activeList = if (sourceList == "ForYou") allSongs else topTracks
     val initialIndex = activeList.indexOf(song).coerceAtLeast(0)
     val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex)
@@ -112,16 +112,22 @@ fun FullScreenPlayer(
                             totalDragY > verticalThreshold -> {
                                 onDismiss()
                             }
+
                             totalDragX > horizontalThreshold -> {
                                 onPrevious()
                                 coroutineScope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage - 1).coerceAtLeast(0)
+                                    )
                                 }
                             }
+
                             totalDragX < -horizontalThreshold -> {
                                 onNext()
                                 coroutineScope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    pagerState.animateScrollToPage(
+                                        (pagerState.currentPage + 1).coerceAtMost(activeList.size - 1)
+                                    )
                                 }
                             }
                         }
@@ -173,15 +179,15 @@ fun FullScreenPlayer(
                     .height(320.dp),
                 contentPadding = PaddingValues(horizontal = 50.dp),
             ) { page ->
-                val song = activeList[page]
+                val currentItem = activeList[page]
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
-                            val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            val pageOffset =
+                                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                             val absOffset = pageOffset.absoluteValue
 
-                            // Scale down the image as it moves away from the center
                             val scale = 0.8f + (1 - absOffset).coerceIn(0f, 0.2f)
 
                             scaleX = scale
@@ -192,9 +198,10 @@ fun FullScreenPlayer(
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = "https://cms.samespace.com/assets/${song.cover}",
-                        contentDescription = "Album cover for ${song.name}",
-                        modifier = Modifier.size(320.dp)
+                        model = "https://cms.samespace.com/assets/${currentItem.cover}",
+                        contentDescription = "Album cover for ${currentItem.name}",
+                        modifier = Modifier
+                            .size(320.dp)
                             .clip(RoundedCornerShape(4.dp)),
                         contentScale = ContentScale.Crop,
                     )
@@ -203,12 +210,14 @@ fun FullScreenPlayer(
 
             // Update currentSong and trigger playback when pager settles
             LaunchedEffect(pagerState.currentPage) {
-                currentSong = activeList[pagerState.currentPage]
                 val newIndex = pagerState.currentPage
-                if (newIndex > initialIndex) {
-                    onNext()
-                } else if (newIndex < initialIndex) {
-                    onPrevious()
+                if (newIndex != initialIndex) {
+                    currentSong = activeList[newIndex]
+                    if (newIndex > initialIndex) {
+                        onNext()
+                    } else {
+                        onPrevious()
+                    }
                 }
             }
 
@@ -232,7 +241,9 @@ fun FullScreenPlayer(
 
             // Progress bar
             Column(
-                modifier = Modifier.fillMaxWidth().padding(20.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
             ) {
                 LinearProgressIndicator(
                     progress = { (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f) },
@@ -271,13 +282,20 @@ fun FullScreenPlayer(
             ) {
                 val prevInteractionSource = remember { MutableInteractionSource() }
                 val prevIsPressed by prevInteractionSource.collectIsPressedAsState()
-                val prevScale by animateFloatAsState(if (prevIsPressed) 0.9f else 1f, label = "PrevScale")
+                val prevScale by animateFloatAsState(
+                    if (prevIsPressed) 0.9f else 1f,
+                    label = "PrevScale"
+                )
 
                 IconButton(
                     onClick = {
                         onPrevious()
                         coroutineScope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                            pagerState.animateScrollToPage(
+                                (pagerState.currentPage - 1).let {
+                                    if (it < 0) activeList.size - 1 else it
+                                }
+                            )
                         }
                     },
                     interactionSource = prevInteractionSource,
@@ -293,7 +311,10 @@ fun FullScreenPlayer(
 
                 val playPauseInteractionSource = remember { MutableInteractionSource() }
                 val playPauseIsPressed by playPauseInteractionSource.collectIsPressedAsState()
-                val playPauseScale by animateFloatAsState(if (playPauseIsPressed) 0.9f else 1f, label = "PlayPauseScale")
+                val playPauseScale by animateFloatAsState(
+                    if (playPauseIsPressed) 0.9f else 1f,
+                    label = "PlayPauseScale"
+                )
 
                 Box(
                     modifier = Modifier
@@ -320,13 +341,20 @@ fun FullScreenPlayer(
 
                 val nextInteractionSource = remember { MutableInteractionSource() }
                 val nextIsPressed by nextInteractionSource.collectIsPressedAsState()
-                val nextScale by animateFloatAsState(if (nextIsPressed) 0.9f else 1f, label = "NextScale")
+                val nextScale by animateFloatAsState(
+                    if (nextIsPressed) 0.9f else 1f,
+                    label = "NextScale"
+                )
 
                 IconButton(
                     onClick = {
                         onNext()
                         coroutineScope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            pagerState.animateScrollToPage(
+                                (pagerState.currentPage + 1).let {
+                                    if (it >= activeList.size) 0 else it
+                                }
+                            )
                         }
                     },
                     interactionSource = nextInteractionSource,
@@ -342,18 +370,6 @@ fun FullScreenPlayer(
             }
         }
     }
-}
-
-// Helper function to update the current song based on direction (non-Composable)
-fun updateCurrentSong(currentSong: Song, direction: Int, allSongs: List<Song>, topTracks: List<Song>, sourceList: String): Song {
-    val activeList = if (sourceList == "ForYou") allSongs else topTracks
-    val currentIndex = activeList.indexOf(currentSong)
-    val newIndex = if (direction > 0) {
-        if (currentIndex >= activeList.size - 1) 0 else currentIndex + 1
-    } else {
-        if (currentIndex <= 0) activeList.size - 1 else currentIndex - 1
-    }
-    return activeList[newIndex]
 }
 
 private fun formatTime(milliseconds: Long): String {
