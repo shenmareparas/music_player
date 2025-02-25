@@ -82,33 +82,43 @@ fun FullScreenPlayer(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val density = LocalDensity.current
-    var totalDragX by remember { mutableFloatStateOf(0f) } // Track horizontal drag for song changes
-    var totalDragY by remember { mutableFloatStateOf(0f) } // Track vertical drag for minimization
+    var totalDragX by remember { mutableFloatStateOf(0f) }
+    var totalDragY by remember { mutableFloatStateOf(0f) }
     val activeList = if (sourceList == "ForYou") allSongs else topTracks
     val initialIndex = activeList.indexOf(song).coerceAtLeast(0)
     val pagerState = rememberPagerState(pageCount = { activeList.size }, initialPage = initialIndex)
     var currentSong by remember { mutableStateOf(song) }
     val coroutineScope = rememberCoroutineScope()
-    var isDragging by remember { mutableStateOf(false) } // Track dragging state
+    var isDragging by remember { mutableStateOf(false) }
     val offsetY by animateFloatAsState(
-        targetValue = if (isDragging) totalDragY.coerceAtMost(density.run { 2000.dp.toPx() }) else 0f, // Cap the drag at a reasonable screen height
+        targetValue = if (isDragging) totalDragY.coerceAtMost(density.run { 2000.dp.toPx() }) else 0f,
         animationSpec = tween(durationMillis = 200),
         label = "OffsetYAnimation"
     )
 
+    fun updateCurrentSong(direction: Int): Song {
+        val currentIndex = activeList.indexOf(currentSong)
+        val newIndex = if (direction > 0) {
+            if (currentIndex >= activeList.size - 1) 0 else currentIndex + 1
+        } else {
+            if (currentIndex <= 0) activeList.size - 1 else currentIndex - 1
+        }
+        return activeList[newIndex]
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .offset { IntOffset(0, offsetY.toInt()) } // Apply vertical offset to the entire content
+            .offset { IntOffset(0, offsetY.toInt()) }
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        if (dragAmount.y > 0) { // Only track downward drags for minimization
+                        if (dragAmount.y > 0) {
                             totalDragY += dragAmount.y
                             isDragging = true
                         }
-                        totalDragX += dragAmount.x // Still track horizontal drags for song changes
+                        totalDragX += dragAmount.x
                     },
                     onDragEnd = {
                         isDragging = false
@@ -121,6 +131,7 @@ fun FullScreenPlayer(
                             }
                             totalDragX > horizontalThreshold -> {
                                 onPrevious()
+                                currentSong = updateCurrentSong(-1)
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(
                                         (pagerState.currentPage - 1).let {
@@ -131,6 +142,7 @@ fun FullScreenPlayer(
                             }
                             totalDragX < -horizontalThreshold -> {
                                 onNext()
+                                currentSong = updateCurrentSong(1)
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(
                                         (pagerState.currentPage + 1).let {
@@ -226,13 +238,12 @@ fun FullScreenPlayer(
                         contentDescription = "Album cover for ${currentItem.name}",
                         modifier = Modifier
                             .size(320.dp)
-                            .clip(RoundedCornerShape(4.dp)),
+                            .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
                     )
                 }
             }
 
-            // Update currentSong and trigger playback when pager settles
             LaunchedEffect(pagerState.currentPage) {
                 val newIndex = pagerState.currentPage
                 if (newIndex != initialIndex) {
@@ -314,6 +325,7 @@ fun FullScreenPlayer(
                 IconButton(
                     onClick = {
                         onPrevious()
+                        currentSong = updateCurrentSong(-1)
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(
                                 (pagerState.currentPage - 1).let {
@@ -373,6 +385,7 @@ fun FullScreenPlayer(
                 IconButton(
                     onClick = {
                         onNext()
+                        currentSong = updateCurrentSong(1)
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(
                                 (pagerState.currentPage + 1).let {

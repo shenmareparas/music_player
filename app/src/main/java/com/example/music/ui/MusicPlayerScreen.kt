@@ -196,7 +196,7 @@ fun MusicPlayerScreen(
                             contentColor = Color.White,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 80.dp),
+                                .padding(horizontal = 75.dp),
                             indicator = { },
                             divider = { }
                         ) {
